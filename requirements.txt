@@ -5,8 +5,9 @@ fastmcp>=2.0.0
 pexpect>=4.8.0
 psutil>=5.9.0
 
-# Async and concurrency
-asyncio-mqtt>=0.13.0
+# HTTP client/server
+aiohttp>=3.8.0
+aiohttp-cors>=0.7.0
 
 # Logging and monitoring
 structlog>=23.1.0
