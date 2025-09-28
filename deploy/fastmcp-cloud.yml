@@ -1,0 +1,48 @@
+# FastMCP Cloud Deployment Configuration
+# Deploy with: fastmcp deploy server.py --config deploy/fastmcp-cloud.yml
+
+name: claude-code-controller
+description: "Remote control and monitoring for Claude-Code sessions via ChatGPT"
+
+# Server configuration
+server:
+  file: server.py
+  timeout: 60
+  memory: 512MB
+
+# Environment variables
+env:
+  SUPERVISOR_URL: "${SUPERVISOR_URL}"
+  LOG_LEVEL: "INFO"
+
+# Authentication
+auth:
+  providers:
+    - google
+    - github
+
+# Rate limiting
+rate_limit:
+  requests_per_minute: 60
+  burst: 10
+
+# Health checks
+health:
+  path: "health://supervisor"
+  interval: 30s
+  timeout: 10s
+
+# Scaling
+scaling:
+  min_instances: 1
+  max_instances: 3
+  cpu_threshold: 70
+  memory_threshold: 80
+
+# Monitoring
+monitoring:
+  metrics: true
+  logs: true
+  alerts:
+    - error_rate > 5%
+    - response_time > 10s
