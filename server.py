@@ -11,14 +11,19 @@ import os
 from datetime import datetime
 from typing import Dict, List, Optional
 import aiohttp
-from fastmcp import FastMCP
+
+# Try to import FastMCP, fall back to mock for testing
+try:
+    from fastmcp import FastMCP
+except ImportError:
+    from mock_fastmcp import FastMCP
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize FastMCP server
-mcp = FastMCP("Claude-Code Controller =€")
+mcp = FastMCP("Claude-Code Controller =ï¿½")
 
 # Configuration
 SUPERVISOR_URL = os.getenv("SUPERVISOR_URL", "http://localhost:8080")

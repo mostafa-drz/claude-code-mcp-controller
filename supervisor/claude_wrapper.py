@@ -36,7 +36,18 @@ class ClaudeWrapper:
             logger.info(f"Starting Claude-Code session {self.session_id}")
 
             # Start claude-code in the specified directory
-            cmd = "claude-code"
+            # For testing, use mock if claude-code is not available
+            try:
+                # Try to find claude-code in PATH
+                import shutil
+                claude_cmd = shutil.which("claude-code")
+                if claude_cmd:
+                    cmd = "claude-code"
+                else:
+                    # Fall back to mock for testing
+                    cmd = f"python3 {os.path.dirname(__file__)}/../scripts/mock-claude-code.py"
+            except:
+                cmd = f"python3 {os.path.dirname(__file__)}/../scripts/mock-claude-code.py"
             self.process = pexpect.spawn(
                 cmd,
                 cwd=self.working_dir,
