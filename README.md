@@ -34,7 +34,7 @@ You: "Tell it yes"
 ChatGPT: "✅ Response sent! Session will continue with installation."
 ```
 
-> **💡 Test this demo locally!** Run `./start_local_chatgpt_test.sh` + `ngrok http 8000` to try it yourself with real ChatGPT before deploying.
+> **💡 Test this demo locally!** Start the server + supervisor, then `ngrok http 8000` to try it yourself with real ChatGPT before deploying.
 
 ## 🏗️ Architecture
 
@@ -67,13 +67,16 @@ cd claude-code-mcp-controller
 # Install dependencies (using Python 3.10+)
 python3 -m pip install -r requirements.txt
 
-# Start local ChatGPT testing environment
-./start_local_chatgpt_test.sh
+# Start supervisor
+python3 supervisor/main.py
 ```
 
 **In another terminal:**
 ```bash
-# Make server public for ChatGPT
+# Start FastMCP server
+python3 -c "from server import mcp; mcp.run(transport='http', host='0.0.0.0', port=8000, path='/mcp')"
+
+# In a third terminal, make server public for ChatGPT
 ngrok http 8000
 ```
 
@@ -123,14 +126,12 @@ git push -u origin main
 Test the **real end-to-end experience** with ChatGPT locally before deploying:
 
 ```bash
-# Start local testing environment
-./start_local_chatgpt_test.sh
-```
+# Terminal 1: Start supervisor
+python3 supervisor/main.py
 
-This starts:
-- ✅ FastMCP server on `http://localhost:8000/mcp`
-- ✅ Supervisor for Claude-Code sessions
-- ✅ Ready for ngrok + ChatGPT connection
+# Terminal 2: Start FastMCP server
+python3 -c "from server import mcp; mcp.run(transport='http', host='0.0.0.0', port=8000, path='/mcp')"
+```
 
 **Then connect ChatGPT:**
 1. **Make public**: `ngrok http 8000`
