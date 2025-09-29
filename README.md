@@ -83,33 +83,25 @@ ngrok http 8000
 
 ### 2. Deploy to FastMCP Cloud (When Ready)
 
+**Step 1: Create GitHub Repository**
 ```bash
-# Install FastMCP CLI (verified production-ready)
-python3 -m pip install fastmcp
-# or using uv (recommended): uv add fastmcp
-
-# Make your Mac accessible (development)
-ngrok http 8080  # Note the public URL
-
-# Deploy MCP server
-export SUPERVISOR_URL="https://your-ngrok-url.ngrok.io"
-fastmcp deploy server.py --config deploy/fastmcp-cloud.yml
-
-# Get your MCP endpoint
-fastmcp info claude-code-controller
+# Add GitHub remote and push
+git remote add origin https://github.com/YOUR_USERNAME/claude-code-mcp-controller.git
+git push -u origin main
 ```
 
-### 3. Connect ChatGPT
+**Step 2: Deploy to FastMCP Cloud**
+1. **Sign in**: Go to https://fastmcp.cloud with GitHub account
+2. **Create project**:
+   - **Name**: `claude-code-controller`
+   - **Repository**: `YOUR_USERNAME/claude-code-mcp-controller`
+   - **Entrypoint**: `server.py:mcp`
+3. **Deploy**: Automatic deployment to `https://claude-code-controller.fastmcp.app/mcp`
 
-**Option A: MCP Connectors (Team/Enterprise)**
-1. Admin: Go to ChatGPT Organization Settings
-2. Deploy custom MCP connector with your FastMCP endpoint
-3. Users can access via standard ChatGPT interface
-
-**Option B: Manual Integration (Development)**
-1. Use your deployed MCP endpoint with compatible MCP clients
-2. Test with: `fastmcp run server.py` locally first
-3. Verify with: *"List my Claude-Code sessions"*
+**Step 3: Connect ChatGPT**
+- **Team/Enterprise**: Add MCP connector with your FastMCP Cloud URL
+- **Development**: Use compatible MCP clients with the endpoint
+- **Test**: *"List my Claude-Code sessions"*
 
 ## 🛠️ MCP Tools Available
 
