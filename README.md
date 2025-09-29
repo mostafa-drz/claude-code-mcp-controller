@@ -62,8 +62,8 @@ ChatGPT: "✅ Response sent! Session will continue with installation."
 git clone <your-repo>
 cd claude-code-mcp-controller
 
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies (using Python 3.10+)
+python3 -m pip install -r requirements.txt
 
 # Run local tests (includes mock Claude-Code)
 python3 scripts/test-local.py
@@ -75,8 +75,9 @@ python3 supervisor/main.py
 ### 2. Deploy to FastMCP Cloud
 
 ```bash
-# Install FastMCP CLI
-pip install fastmcp
+# Install FastMCP CLI (verified production-ready)
+python3 -m pip install fastmcp
+# or using uv (recommended): uv add fastmcp
 
 # Make your Mac accessible (development)
 ngrok http 8080  # Note the public URL
@@ -91,10 +92,15 @@ fastmcp info claude-code-controller
 
 ### 3. Connect ChatGPT
 
-1. Go to ChatGPT Settings → Beta Features
-2. Enable "Model Context Protocol"
-3. Add your FastMCP Cloud endpoint
-4. Test: *"List my Claude-Code sessions"*
+**Option A: MCP Connectors (Team/Enterprise)**
+1. Admin: Go to ChatGPT Organization Settings
+2. Deploy custom MCP connector with your FastMCP endpoint
+3. Users can access via standard ChatGPT interface
+
+**Option B: Manual Integration (Development)**
+1. Use your deployed MCP endpoint with compatible MCP clients
+2. Test with: `fastmcp run server.py` locally first
+3. Verify with: *"List my Claude-Code sessions"*
 
 ## 🛠️ MCP Tools Available
 
@@ -124,33 +130,55 @@ python3 supervisor/main.py  # Test supervisor
 python3 server.py           # Test MCP server
 ```
 
-### Mock Mode
-The system includes mock implementations for development:
-- **Mock Claude-Code**: Simulates Claude-Code when not installed
-- **Mock FastMCP**: Local MCP server for testing without FastMCP Cloud
+### Development vs Production
+- **Development**: Includes mock implementations for local testing
+  - Mock Claude-Code: Simulates Claude-Code behavior when not installed
+  - Local FastMCP: Test MCP server functionality without cloud deployment
+- **Production**: Real FastMCP 2.12.4 framework with full MCP specification compliance
+  - Full OAuth 2.1 authorization flows with PKCE
+  - HTTP+SSE transport with Server-Sent Events
+  - Production-grade security and session management
 
 ## 🚢 Deployment Options
 
 ### FastMCP Cloud (Recommended)
 - ✅ Zero infrastructure management
-- ✅ Built-in authentication and scaling
+- ✅ Built-in OAuth 2.1 authentication with PKCE
 - ✅ Monitoring and health checks
-- ✅ Direct ChatGPT integration
+- ✅ Production-ready MCP 2025-03-26 compliance
+- ✅ Server-Sent Events (SSE) for real-time updates
 
-### Self-Hosted
-- 🐳 Docker containers
-- ☁️ Google Cloud Run
-- 🔧 Custom infrastructure
+### Self-Hosted with HTTP Transport
+- 🔒 **OAuth 2.1 + PKCE**: Full authentication flow
+- 🌐 **HTTP+SSE Transport**: JSON-RPC 2.0 over HTTPS
+- 🛡️ **Security Features**: Origin validation, secure sessions
+- 🐳 **Container Support**: Docker with FastMCP framework
+
+### Enterprise Integration
+- 🏢 **ChatGPT Connectors**: Team/Enterprise plan integration
+- 🔧 **Custom Deployment**: Self-hosted with OAuth
+- 📊 **Audit & Compliance**: Full request logging
+
+**Production Requirements** (Based on MCP Specification):
+- HTTPS endpoints mandatory
+- Origin header validation for DNS rebinding protection
+- Secure session ID generation (UUIDs)
+- Bearer token authentication on all requests
 
 See [`deploy/README.md`](deploy/README.md) for detailed deployment guides.
 
-## 🔒 Security Features
+## 🔒 Security Features (MCP 2025-03-26 Compliant)
 
-- 🔐 **OAuth Authentication**: Google, GitHub, Azure support
-- 🚫 **Command Sandboxing**: Restrict dangerous operations
-- 🔍 **Audit Logging**: Track all session interactions
-- 🌐 **HTTPS Only**: Encrypted communication
-- 🚪 **Session Isolation**: Each Claude-Code session is isolated
+- 🔐 **OAuth 2.1 with PKCE**: RFC-compliant authorization flows
+- 🏢 **Dynamic Client Registration**: RFC7591 support for new clients
+- 🔍 **Authorization Server Metadata**: RFC8414 endpoint discovery
+- 🛡️ **DNS Rebinding Protection**: Origin header validation
+- 🔒 **Secure Sessions**: Cryptographically secure UUID session IDs
+- 🌐 **HTTPS Only**: All authorization endpoints encrypted
+- 🚪 **Session Isolation**: Each Claude-Code session sandboxed
+- 📝 **Audit Logging**: Complete MCP request/response tracking
+- 🔄 **Token Rotation**: Access token expiration and refresh
+- 🚫 **Command Validation**: Restrict dangerous operations
 
 ## 📱 Mobile Workflow Example
 
@@ -191,10 +219,13 @@ ChatGPT: "✅ Session terminated. All work has been committed."
 ## 🎯 Roadmap
 
 **v0.1.0** (Current)
-- [x] Core MCP server with all tools
+- [x] Core MCP server with all 8 tools
 - [x] Local supervisor with PTY management
-- [x] FastMCP Cloud deployment
-- [x] End-to-end testing
+- [x] FastMCP 2.12.4 integration (production-ready)
+- [x] MCP 2025-03-26 specification compliance
+- [x] OAuth 2.1 + PKCE authentication architecture
+- [x] HTTP+SSE transport implementation
+- [x] Comprehensive user journey testing (10 scenarios)
 
 **v0.2.0** (Next)
 - [ ] Enhanced error handling and recovery

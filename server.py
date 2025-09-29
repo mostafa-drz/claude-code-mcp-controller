@@ -3,6 +3,8 @@ Claude-Code MCP Controller Server
 
 FastMCP-based server that provides MCP tools for controlling Claude-Code sessions
 remotely via ChatGPT. Communicates with the local supervisor to manage sessions.
+
+Built following FastMCP 2.0 documentation and best practices.
 """
 
 import asyncio
@@ -10,20 +12,16 @@ import logging
 import os
 from datetime import datetime
 from typing import Dict, List, Optional
-import aiohttp
 
-# Try to import FastMCP, fall back to mock for testing
-try:
-    from fastmcp import FastMCP
-except ImportError:
-    from mock_fastmcp import FastMCP
+import aiohttp
+from fastmcp import FastMCP
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize FastMCP server
-mcp = FastMCP("Claude-Code Controller =�")
+mcp = FastMCP("Claude-Code Controller 🚀")
 
 # Configuration
 SUPERVISOR_URL = os.getenv("SUPERVISOR_URL", "http://localhost:8080")
@@ -37,8 +35,16 @@ async def get_http_session() -> aiohttp.ClientSession:
     """Get or create HTTP session for supervisor communication."""
     global http_session
     if http_session is None or http_session.closed:
+        # Disable SSL verification for ngrok/local development
+        import ssl
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+
+        connector = aiohttp.TCPConnector(ssl=ssl_context)
         http_session = aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=SUPERVISOR_TIMEOUT)
+            timeout=aiohttp.ClientTimeout(total=SUPERVISOR_TIMEOUT),
+            connector=connector
         )
     return http_session
 
@@ -288,7 +294,7 @@ async def respond_to_prompt(session_id: str, response: str) -> Dict:
         raise
 
 
-@mcp.resource(uri="health://supervisor")
+@mcp.resource("health://supervisor")
 async def supervisor_health() -> Dict:
     """Get health status of the supervisor and all sessions."""
     try:
@@ -311,7 +317,7 @@ async def supervisor_health() -> Dict:
         }
 
 
-@mcp.resource(uri="sessions://active")
+@mcp.resource("sessions://active")
 async def active_sessions() -> Dict:
     """Get a summary of all active sessions."""
     try:
@@ -352,6 +358,7 @@ if __name__ == "__main__":
         import atexit
         atexit.register(lambda: asyncio.run(cleanup()) if asyncio.get_event_loop().is_running() else None)
 
+        # Use FastMCP's run method with default stdio transport
         mcp.run()
 
     except KeyboardInterrupt:
