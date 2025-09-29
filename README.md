@@ -34,6 +34,8 @@ You: "Tell it yes"
 ChatGPT: "✅ Response sent! Session will continue with installation."
 ```
 
+> **💡 Test this demo locally!** Run `./start_local_chatgpt_test.sh` + `ngrok http 8000` to try it yourself with real ChatGPT before deploying.
+
 ## 🏗️ Architecture
 
 ```
@@ -55,7 +57,7 @@ ChatGPT: "✅ Response sent! Session will continue with installation."
 
 ## 🚀 Quick Start
 
-### 1. Setup Local Supervisor
+### 1. Test Locally with ChatGPT (Recommended)
 
 ```bash
 # Clone and setup
@@ -65,14 +67,21 @@ cd claude-code-mcp-controller
 # Install dependencies (using Python 3.10+)
 python3 -m pip install -r requirements.txt
 
-# Run local tests (includes mock Claude-Code)
-python3 scripts/test-local.py
-
-# Start supervisor (runs on localhost:8080)
-python3 supervisor/main.py
+# Start local ChatGPT testing environment
+./start_local_chatgpt_test.sh
 ```
 
-### 2. Deploy to FastMCP Cloud
+**In another terminal:**
+```bash
+# Make server public for ChatGPT
+ngrok http 8000
+```
+
+**Configure ChatGPT:**
+- Add MCP connector: `https://your-ngrok-url.ngrok-free.app/mcp`
+- Test: *"What Claude-Code tools are available?"*
+
+### 2. Deploy to FastMCP Cloud (When Ready)
 
 ```bash
 # Install FastMCP CLI (verified production-ready)
@@ -117,27 +126,59 @@ fastmcp info claude-code-controller
 
 ## 📋 Testing & Development
 
-### Run Local Tests
-```bash
-# Full integration test suite
-python3 scripts/test-local.py
+### 🎯 Local ChatGPT Testing (Recommended)
 
-# Unit tests
-pytest tests/
+Test the **real end-to-end experience** with ChatGPT locally before deploying:
+
+```bash
+# Start local testing environment
+./start_local_chatgpt_test.sh
+```
+
+This starts:
+- ✅ FastMCP server on `http://localhost:8000/mcp`
+- ✅ Supervisor for Claude-Code sessions
+- ✅ Ready for ngrok + ChatGPT connection
+
+**Then connect ChatGPT:**
+1. **Make public**: `ngrok http 8000`
+2. **Configure ChatGPT**: Add MCP connector with `https://your-ngrok-url.ngrok-free.app/mcp`
+3. **Test mobile workflow**: Use ChatGPT mobile app to control Claude-Code remotely
+
+**Test scenarios in ChatGPT:**
+```
+"What Claude-Code tools are available?"
+"List my Claude-Code sessions"
+"Create a new session called mobile-test"
+"Tell the mobile-test session to list files"
+"Show me recent logs from that session"
+```
+
+### 🔧 Development Testing (Automated)
+
+For code validation and CI/CD:
+
+```bash
+# Validate FastMCP patterns
+python3 pattern_validation.py
+
+# Test server import and tools
+python3 test_client.py
 
 # Test specific components
 python3 supervisor/main.py  # Test supervisor
-python3 server.py           # Test MCP server
+python3 server.py           # Test MCP server (STDIO)
 ```
 
-### Development vs Production
-- **Development**: Includes mock implementations for local testing
-  - Mock Claude-Code: Simulates Claude-Code behavior when not installed
-  - Local FastMCP: Test MCP server functionality without cloud deployment
-- **Production**: Real FastMCP 2.12.4 framework with full MCP specification compliance
-  - Full OAuth 2.1 authorization flows with PKCE
-  - HTTP+SSE transport with Server-Sent Events
-  - Production-grade security and session management
+### Local vs Production Testing
+
+| Testing Method | Purpose | When to Use |
+|---------------|---------|-------------|
+| **ChatGPT Local** | Real UX validation | Before deployment, mobile testing |
+| **Automated Tests** | Code validation | Development, CI/CD |
+| **FastMCP Cloud** | Production testing | Final validation |
+
+**Priority**: Always test with **ChatGPT locally first** - it's your source of truth for user experience.
 
 ## 🚢 Deployment Options
 
