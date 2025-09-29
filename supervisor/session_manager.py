@@ -62,13 +62,13 @@ class SessionManager:
 
         return await wrapper.send_message(message)
 
-    async def get_logs(self, session_id: str, lines: int = 50) -> List[str]:
-        """Get logs from a specific session."""
+    async def get_logs(self, session_id: str, lines: int = 50, mobile_friendly: bool = False) -> List[str]:
+        """Get logs from a specific session with mobile optimization."""
         wrapper = await self.get_session(session_id)
         if not wrapper:
             raise ValueError(f"Session {session_id} not found")
 
-        return await wrapper.get_logs(lines)
+        return await wrapper.get_logs(lines, mobile_friendly)
 
     async def terminate_session(self, session_id: str) -> bool:
         """Terminate a specific session."""

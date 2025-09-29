@@ -64,24 +64,53 @@ async def supervisor_request(method: str, endpoint: str, **kwargs) -> Dict:
 
 
 @mcp.tool
-async def list_sessions() -> List[Dict]:
+async def list_sessions() -> Dict:
     """List all active Claude-Code sessions with their status."""
     try:
         result = await supervisor_request("GET", "/sessions")
         sessions = result.get("sessions", [])
 
         logger.info(f"Retrieved {len(sessions)} sessions")
-        return sessions
+
+        # CHATGPT OPTIMIZATION: Format response for conversation
+        if len(sessions) == 0:
+            return {
+                "message": "No active Claude-Code sessions found.",
+                "suggestion": "Create a new session by saying: 'Create a session for my project'",
+                "sessions": sessions
+            }
+
+        # Format sessions for ChatGPT display
+        session_summary = []
+        for session in sessions:
+            summary = {
+                "name": session.get("session_id", "unknown").split("_")[0],  # Cleaner display name
+                "status": session.get("status", "unknown"),
+                "created": session.get("created_at", "unknown"),
+                "directory": session.get("working_dir", "").split("/")[-1] if session.get("working_dir") else "unknown",  # Just folder name
+                "full_id": session.get("session_id")  # Keep full ID for operations
+            }
+            session_summary.append(summary)
+
+        return {
+            "message": f"Found {len(sessions)} active Claude-Code session{'s' if len(sessions) != 1 else ''}",
+            "sessions": session_summary,
+            "total_count": len(sessions)
+        }
 
     except Exception as e:
         logger.error(f"Error listing sessions: {e}")
-        raise
+        return {
+            "error": "Failed to retrieve sessions",
+            "details": str(e),
+            "suggestion": "Check if the supervisor is running and try again"
+        }
 
 
 @mcp.tool
 async def create_session(name: Optional[str] = None, working_dir: Optional[str] = None) -> Dict:
     """
-    Create a new Claude-Code session.
+    Create a new Claude-Code session optimized for ChatGPT responsiveness.
 
     Args:
         name: Optional name for the session (default: auto-generated)
@@ -95,13 +124,27 @@ async def create_session(name: Optional[str] = None, working_dir: Optional[str] 
             payload["working_dir"] = working_dir
 
         result = await supervisor_request("POST", "/sessions", json=payload)
+        session_id = result.get('session_id')
 
-        logger.info(f"Created session: {result.get('session_id')}")
-        return result
+        logger.info(f"Created session: {session_id}")
+
+        # CHATGPT OPTIMIZATION: Return user-friendly response
+        return {
+            "message": f"✅ Created new Claude-Code session '{session_id.split('_')[0] if session_id else name or 'session'}'",
+            "session_name": session_id.split('_')[0] if session_id else name or 'session',
+            "full_session_id": session_id,
+            "working_directory": working_dir or "default",
+            "status": "starting up",
+            "next_steps": "You can now send commands to this session or check its logs"
+        }
 
     except Exception as e:
         logger.error(f"Error creating session: {e}")
-        raise
+        return {
+            "error": "Failed to create Claude-Code session",
+            "details": str(e),
+            "suggestion": "Make sure the supervisor is running and the working directory exists"
+        }
 
 
 @mcp.tool
@@ -126,24 +169,49 @@ async def send_message(session_id: str, message: str) -> Dict:
 
 
 @mcp.tool
-async def get_logs(session_id: str, lines: int = 50) -> Dict:
+async def get_logs(session_id: str, lines: int = 50, mobile_format: bool = True) -> Dict:
     """
-    Get recent logs from a Claude-Code session.
+    Get recent logs from a Claude-Code session, formatted for ChatGPT display.
 
     Args:
         session_id: The ID of the session to get logs from
         lines: Number of recent log lines to retrieve (default: 50)
+        mobile_format: Format logs for mobile ChatGPT app (default: True)
     """
     try:
-        params = {"lines": lines}
+        # Use mobile_friendly parameter for better ChatGPT mobile display
+        params = {"lines": lines, "mobile": "true" if mobile_format else "false"}
         result = await supervisor_request("GET", f"/sessions/{session_id}/logs", params=params)
 
-        logger.info(f"Retrieved {len(result.get('logs', []))} log lines from session {session_id}")
-        return result
+        logs = result.get('logs', [])
+        logger.info(f"Retrieved {len(logs)} log lines from session {session_id}")
+
+        # CHATGPT OPTIMIZATION: Format for conversation
+        if not logs:
+            return {
+                "message": f"No recent activity in session '{session_id.split('_')[0]}'",
+                "suggestion": "Send a command to the session to see some activity",
+                "logs": []
+            }
+
+        # Format logs for ChatGPT with markdown for better mobile display
+        formatted_logs = "Recent activity:\n```\n" + "\n".join(logs[-10:]) + "\n```"
+
+        return {
+            "message": f"Showing last {min(len(logs), 10)} lines from session '{session_id.split('_')[0]}'",
+            "formatted_logs": formatted_logs,
+            "raw_logs": logs,
+            "session_id": session_id.split('_')[0],  # Clean name for display
+            "total_lines": len(logs)
+        }
 
     except Exception as e:
         logger.error(f"Error getting logs from session {session_id}: {e}")
-        raise
+        return {
+            "error": f"Could not retrieve logs from session '{session_id.split('_')[0] if '_' in session_id else session_id}'",
+            "details": str(e),
+            "suggestion": "Check if the session exists with 'list_sessions' tool"
+        }
 
 
 @mcp.tool

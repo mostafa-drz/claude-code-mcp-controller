@@ -139,13 +139,14 @@ class SupervisorServer:
             return web.json_response({"error": str(e)}, status=500)
 
     async def get_logs(self, request):
-        """Get logs from a session."""
+        """Get logs from a session with mobile optimization."""
         try:
             session_id = request.match_info['session_id']
             lines = int(request.query.get('lines', 50))
+            mobile = request.query.get('mobile', 'false').lower() == 'true'
 
-            logs = await self.session_manager.get_logs(session_id, lines)
-            return web.json_response({"logs": logs, "session_id": session_id})
+            logs = await self.session_manager.get_logs(session_id, lines, mobile_friendly=mobile)
+            return web.json_response({"logs": logs, "session_id": session_id, "mobile_optimized": mobile})
 
         except ValueError as e:
             return web.json_response({"error": str(e)}, status=404)
