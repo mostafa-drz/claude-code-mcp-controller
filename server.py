@@ -294,6 +294,120 @@ async def respond_to_prompt(session_id: str, response: str) -> Dict:
         raise
 
 
+@mcp.tool
+async def search(query: str, limit: int = 10) -> Dict:
+    """
+    Search Claude-Code sessions and logs for relevant content.
+    
+    This is a required tool for ChatGPT MCP connector compatibility.
+
+    Args:
+        query: Search query to find relevant sessions or content
+        limit: Maximum number of results to return (default: 10)
+    """
+    try:
+        # Get all sessions
+        sessions_result = await supervisor_request("GET", "/sessions")
+        sessions = sessions_result.get("sessions", [])
+        
+        matching_sessions = []
+        
+        for session in sessions[:limit]:
+            session_id = session.get("session_id", "")
+            working_dir = session.get("working_dir", "")
+            
+            # Simple text matching for now
+            if (query.lower() in session_id.lower() or 
+                query.lower() in working_dir.lower()):
+                matching_sessions.append({
+                    "session_id": session_id,
+                    "status": session.get("status"),
+                    "working_dir": working_dir,
+                    "match_reason": f"Found '{query}' in session ID or directory"
+                })
+        
+        return {
+            "query": query,
+            "results": matching_sessions,
+            "total_matches": len(matching_sessions),
+            "message": f"Found {len(matching_sessions)} sessions matching '{query}'"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error searching sessions: {e}")
+        return {
+            "query": query,
+            "results": [],
+            "total_matches": 0,
+            "error": f"Search failed: {str(e)}"
+        }
+
+
+@mcp.tool
+async def fetch(url: str) -> Dict:
+    """
+    Fetch content from Claude-Code session logs or status.
+    
+    This is a required tool for ChatGPT MCP connector compatibility.
+
+    Args:
+        url: Session ID or resource identifier to fetch content from
+    """
+    try:
+        # If URL looks like a session ID, fetch session details
+        if "_" in url and len(url.split("_")) == 2:
+            # Try to get session status
+            try:
+                status_result = await supervisor_request("GET", f"/sessions/{url}/status")
+                logs_result = await supervisor_request("GET", f"/sessions/{url}/logs?lines=20")
+                
+                return {
+                    "url": url,
+                    "content": {
+                        "status": status_result,
+                        "recent_logs": logs_result.get("logs", [])
+                    },
+                    "content_type": "session_data",
+                    "message": f"Fetched data for session {url}"
+                }
+            except:
+                pass
+        
+        # Fallback: try to list sessions and find matches
+        sessions_result = await supervisor_request("GET", "/sessions")
+        sessions = sessions_result.get("sessions", [])
+        
+        matching_session = None
+        for session in sessions:
+            if url in session.get("session_id", ""):
+                matching_session = session
+                break
+        
+        if matching_session:
+            return {
+                "url": url,
+                "content": matching_session,
+                "content_type": "session_info",
+                "message": f"Found session information for {url}"
+            }
+        else:
+            return {
+                "url": url,
+                "content": None,
+                "content_type": "not_found",
+                "message": f"No session found matching {url}"
+            }
+            
+    except Exception as e:
+        logger.error(f"Error fetching content for {url}: {e}")
+        return {
+            "url": url,
+            "content": None,
+            "content_type": "error",
+            "error": f"Fetch failed: {str(e)}"
+        }
+
+
 @mcp.resource("health://supervisor")
 async def supervisor_health() -> Dict:
     """Get health status of the supervisor and all sessions."""
