@@ -64,8 +64,12 @@ ChatGPT: "✅ Response sent! Session will continue with installation."
 git clone <your-repo>
 cd claude-code-mcp-controller
 
-# Install dependencies (using Python 3.10+)
-python3 -m pip install -r requirements.txt
+# Install dependencies (using uv package manager - recommended)
+uv venv
+uv pip install "fastmcp>=2.12.4" "pexpect>=4.8.0" "psutil>=5.9.0" "aiohttp>=3.8.0" "aiohttp-cors>=0.7.0" "structlog>=23.1.0" "prometheus-client>=0.17.0"
+
+# Alternative: using Python 3.10+ with pip (if you encounter issues with uv)
+# python3 -m pip install -r requirements.txt
 
 # Start supervisor
 python3 supervisor/main.py
@@ -74,7 +78,7 @@ python3 supervisor/main.py
 **In another terminal:**
 ```bash
 # Start FastMCP server
-python3 -c "from server import mcp; mcp.run(transport='http', host='0.0.0.0', port=8000, path='/mcp')"
+python3 start_mcp_server.py
 
 # In a third terminal, make server public for ChatGPT
 ngrok http 8000

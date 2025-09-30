@@ -150,7 +150,24 @@ ChatGPT → MCP Connector → Custom MCP Server → Supervisor → Claude-Code
 
 ## Communication Protocol
 
-When working with new/emerging technologies like MCP:
+### Response Structure Rule
+**ALWAYS start responses with clear action items first, then provide context:**
+
+1. **Action Items** (what to do immediately)
+2. **Brief explanation** (why)
+3. **Technical details** (if needed)
+
+Example:
+```
+## Action Required:
+1. Run: python3 supervisor/main.py
+2. Run: ngrok http 8080
+3. Use ngrok URL in ChatGPT
+
+## Why: FastMCP HTTP transport has bugs, supervisor works directly.
+```
+
+### When Working with New/Emerging Technologies Like MCP:
 
 ### Before Making Technical Decisions
 - **Ask**: "Should I verify this technology's current status?"
