@@ -31,6 +31,9 @@ class Config:
     
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+
+    # Authentication
+    API_KEY: str = os.getenv("CLAUDE_REMOTE_API_KEY", "claude-remote-dev-key-2025")
     
     @property
     def supervisor_url(self) -> str:

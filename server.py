@@ -21,7 +21,7 @@ from config import config
 logging.basicConfig(level=getattr(logging, config.LOG_LEVEL))
 logger = logging.getLogger(__name__)
 
-# Initialize FastMCP server
+# Initialize FastMCP server (no authentication for now - until OpenAI fixes OAuth)
 mcp = FastMCP("Claude-Code Controller 🚀")
 
 # HTTP session for supervisor communication

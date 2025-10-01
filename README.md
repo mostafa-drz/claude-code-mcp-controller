@@ -1,6 +1,6 @@
 # Claude-Code MCP Controller 🚀
 
-A production-ready, cloud-first MCP (Model Context Protocol) server for remotely controlling and monitoring Claude-Code sessions via ChatGPT. Perfect for mobile workflows, remote development, and managing multiple coding sessions.
+A local MCP (Model Context Protocol) server for remotely controlling and monitoring Claude-Code sessions via ChatGPT mobile. Perfect for mobile workflows, remote development, and managing multiple coding sessions from anywhere.
 
 ## 🎯 What This Solves
 
@@ -40,19 +40,19 @@ ChatGPT: "✅ Response sent! Session will continue with installation."
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   ChatGPT +     │◄──►│   FastMCP Cloud  │◄──►│  Mac Supervisor │
-│   MCP Connector │    │   (MCP Server)   │    │  (Local Agent) │
+│   ChatGPT       │◄──►│   Local MCP      │◄──►│  Mac Supervisor │
+│   Mobile App    │    │   + ngrok tunnel │    │  (Local Agent) │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
                                 │                        │
-                                │                        ▼
-                                │               ┌─────────────────┐
-                                │               │ Claude-Code     │
-                                │               │ Sessions        │
-                                │               │ (Multiple PTYs) │
-                                └───────────────┤ • session_1     │
-                                  WebSocket/    │ • session_2     │
-                                  HTTP          │ • session_N     │
-                                                └─────────────────┘
+                       HTTPS via ngrok                   │
+                       No Authentication                 ▼
+                       (until OpenAI fixes OAuth)    ┌─────────────────┐
+                                                     │ Existing Claude │
+                                                     │ Sessions (PTYs) │
+                                                     │ • session_1     │
+                                                     │ • session_2     │
+                                                     │ • session_N     │
+                                                     └─────────────────┘
 ```
 
 ## 🚀 Quick Start
@@ -210,30 +210,21 @@ make test
 ```
 
 **Configure ChatGPT:**
-- Add MCP connector: `https://your-ngrok-url.ngrok-free.app/mcp`
+- Add MCP connector: `https://your-ngrok-url.ngrok.app` (root path, no `/mcp` suffix)
 - Test: *"What Claude-Code tools are available?"*
 
-### 2. Deploy to FastMCP Cloud (When Ready)
+### 2. Local Development Setup (Current Approach)
 
-**Step 1: Create GitHub Repository**
-```bash
-# Add GitHub remote and push
-git remote add origin https://github.com/YOUR_USERNAME/claude-code-mcp-controller.git
-git push -u origin main
-```
+**Why Local over Cloud:**
+- Need access to your Mac's existing Claude sessions
+- Supervisor must run locally to manage local processes
+- Cloud deployment can't control local Mac sessions
 
-**Step 2: Deploy to FastMCP Cloud**
-1. **Sign in**: Go to https://fastmcp.cloud with GitHub account
-2. **Create project**:
-   - **Name**: `claude-code-controller`
-   - **Repository**: `YOUR_USERNAME/claude-code-mcp-controller`
-   - **Entrypoint**: `server.py:mcp`
-3. **Deploy**: Automatic deployment to `https://claude-code-controller.fastmcp.app/mcp`
-
-**Step 3: Connect ChatGPT**
-- **Team/Enterprise**: Add MCP connector with your FastMCP Cloud URL
-- **Development**: Use compatible MCP clients with the endpoint
-- **Test**: *"List my Claude-Code sessions"*
+**Current Status:**
+- ✅ Local MCP server working with FastMCP 2.12.4
+- ✅ ngrok tunnel for ChatGPT connectivity
+- ⏳ OAuth pending (ChatGPT OAuth currently has known issues)
+- ⏳ Supervisor component for Claude session management
 
 ## 🛠️ MCP Tools Available
 
@@ -247,6 +238,8 @@ git push -u origin main
 | `terminate_session` | Stop a session | *"Terminate the stuck session"* |
 | `check_prompts` | Find pending prompts | *"Any sessions waiting for input?"* |
 | `respond_to_prompt` | Answer interactive prompts | *"Tell it 'yes'"* |
+| `search` | Search sessions (ChatGPT requirement) | *"Find sessions with 'web-app' in name"* |
+| `fetch` | Get session data (ChatGPT requirement) | *"Get full details for session X"* |
 
 ## 📋 Testing & Development
 
@@ -269,7 +262,7 @@ make test
 ```
 
 **Then connect ChatGPT:**
-1. **Configure ChatGPT**: Add MCP connector with `https://your-ngrok-url.ngrok-free.app/mcp`
+1. **Configure ChatGPT**: Add MCP connector with `https://your-ngrok-url.ngrok.app` (root path)
 2. **Test mobile workflow**: Use ChatGPT mobile app to control Claude-Code remotely
 
 **Test scenarios in ChatGPT:**
@@ -306,33 +299,31 @@ make lint
 
 **Priority**: Always test with **ChatGPT locally first** - it's your source of truth for user experience.
 
-## 🚢 Deployment Options
+## 🚢 Deployment Approach
 
-### FastMCP Cloud (Recommended)
-- ✅ Zero infrastructure management
-- ✅ Built-in OAuth 2.1 authentication with PKCE
-- ✅ Monitoring and health checks
-- ✅ Production-ready MCP 2025-03-26 compliance
-- ✅ Server-Sent Events (SSE) for real-time updates
+### Current: Local with ngrok (Recommended)
+- ✅ **Direct Mac Access**: Control local Claude sessions
+- ✅ **FastMCP 2.12.4**: Production-ready MCP framework
+- ✅ **SSE Transport**: JSON-RPC 2.0 over HTTPS via ngrok
+- ✅ **Ephemeral Security**: ngrok URLs expire when tunnel closes
+- ⏳ **No Authentication**: Temporary until OpenAI fixes OAuth
 
-### Self-Hosted with HTTP Transport
-- 🔒 **OAuth 2.1 + PKCE**: Full authentication flow
-- 🌐 **HTTP+SSE Transport**: JSON-RPC 2.0 over HTTPS
-- 🛡️ **Security Features**: Origin validation, secure sessions
-- 🐳 **Container Support**: Docker with FastMCP framework
+### Authentication Status
+**Current Reality:**
+- ChatGPT requires OAuth for MCP connectors (per OpenAI docs)
+- OAuth implementation is broken in ChatGPT (community confirmed)
+- No authentication works as temporary solution
+- Ephemeral ngrok URLs provide reasonable security for personal use
 
-### Enterprise Integration
-- 🏢 **ChatGPT Connectors**: Team/Enterprise plan integration
-- 🔧 **Custom Deployment**: Self-hosted with OAuth
-- 📊 **Audit & Compliance**: Full request logging
+**Future:**
+- OAuth 2.1 + PKCE implementation ready
+- Will enable when OpenAI resolves ChatGPT OAuth issues
 
-**Production Requirements** (Based on MCP Specification):
-- HTTPS endpoints mandatory
-- Origin header validation for DNS rebinding protection
-- Secure session ID generation (UUIDs)
-- Bearer token authentication on all requests
-
-See [`deploy/README.md`](deploy/README.md) for detailed deployment guides.
+### Why Not Cloud Deployment?
+Cloud deployment (FastMCP Cloud, etc.) **cannot solve the core use case**:
+- Need local supervisor to access existing Claude sessions
+- Sessions run as local processes on your Mac
+- Remote server cannot control local Mac processes
 
 ## 🔒 Security Architecture & Session Management
 
@@ -361,16 +352,20 @@ Each layer adds security controls and isolation.
 
 ### Security Features (MCP 2025-03-26 Compliant)
 
+**Current Implementation:**
+- 🔒 **Secure Sessions**: Cryptographically secure UUID session IDs
+- 🌐 **HTTPS Only**: All endpoints encrypted via ngrok
+- 🚪 **Session Isolation**: Each Claude-Code session sandboxed
+- 📝 **Audit Logging**: Complete MCP request/response tracking
+- 🚫 **Command Validation**: Restrict dangerous operations
+- ⏳ **Ephemeral URLs**: ngrok tunnels expire when closed
+
+**Ready for OAuth (when ChatGPT fixes issues):**
 - 🔐 **OAuth 2.1 with PKCE**: RFC-compliant authorization flows
 - 🏢 **Dynamic Client Registration**: RFC7591 support for new clients
 - 🔍 **Authorization Server Metadata**: RFC8414 endpoint discovery
 - 🛡️ **DNS Rebinding Protection**: Origin header validation
-- 🔒 **Secure Sessions**: Cryptographically secure UUID session IDs
-- 🌐 **HTTPS Only**: All authorization endpoints encrypted
-- 🚪 **Session Isolation**: Each Claude-Code session sandboxed
-- 📝 **Audit Logging**: Complete MCP request/response tracking
 - 🔄 **Token Rotation**: Access token expiration and refresh
-- 🚫 **Command Validation**: Restrict dangerous operations
 
 ## 📱 Mobile Workflow Example
 
@@ -411,13 +406,14 @@ ChatGPT: "✅ Session terminated. All work has been committed."
 ## 🎯 Roadmap
 
 **v0.1.0** (Current)
-- [x] Core MCP server with all 8 tools
-- [x] Local supervisor with PTY management
+- [x] Core MCP server with 10 tools (8 session + 2 ChatGPT-required)
 - [x] FastMCP 2.12.4 integration (production-ready)
 - [x] MCP 2025-03-26 specification compliance
-- [x] OAuth 2.1 + PKCE authentication architecture
 - [x] HTTP+SSE transport implementation
-- [x] Comprehensive user journey testing (10 scenarios)
+- [x] ngrok tunnel integration for ChatGPT
+- [x] No-auth implementation (temporary solution)
+- [ ] Local supervisor with PTY management (next phase)
+- [ ] OAuth 2.1 + PKCE authentication (pending OpenAI fixes)
 
 **v0.2.0** (Next)
 - [ ] Enhanced error handling and recovery
