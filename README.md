@@ -57,31 +57,156 @@ ChatGPT: "✅ Response sent! Session will continue with installation."
 
 ## 🚀 Quick Start
 
+### ⚡ One-Command Setup (Recommended)
+
+```bash
+# Clone and setup everything
+git clone <your-repo>
+cd claude-code-mcp-controller
+make setup
+```
+
+### ⚙️ Configuration (Optional)
+
+The system uses sensible defaults, but you can customize settings:
+
+```bash
+# Copy example config
+cp env.example .env
+
+# Edit as needed (optional)
+nano .env
+```
+
+**Key settings:**
+- `SUPERVISOR_PORT=8080` - Supervisor HTTP server port
+- `MCP_PORT=8000` - MCP server port for ChatGPT
+- `NGROK_PORT=8000` - Port for ngrok tunnel
+- `LOG_LEVEL=INFO` - Logging level (DEBUG, INFO, WARNING, ERROR)
+
+### 🔧 Essential Make Commands
+
+```bash
+# Show available commands
+make help
+
+# Complete project setup
+make setup
+
+# Start services
+make run-supervisor    # Start supervisor
+make run-server        # Start MCP server
+make ngrok             # Start ngrok tunnel for ChatGPT (requires ngrok installed)
+
+# Development
+make test              # Test the system
+make format            # Format code
+make lint              # Lint code
+
+# Cleanup
+make clean             # Clean up files
+```
+
+### How to Run New Claude-Code Sessions with Supervisor
+
+**Important**: The supervisor creates and manages its own Claude-Code sessions for security. Here's how to use it:
+
+#### 🔍 What Actually Happens
+
+The supervisor tries to start `claude-code` from your PATH, but if it's not found, it uses a **mock script** for testing:
+
+1. **If `claude-code` is installed**: Supervisor runs `claude-code` in the specified directory
+2. **If `claude-code` is NOT installed**: Supervisor runs a mock script that simulates Claude-Code
+
+**To use real Claude-Code**, you need to install it first:
+```bash
+# Check if claude-code is available:
+which claude-code
+
+# If not found (like on your system), you need to install it:
+# Option 1: Install via npm (if you have Node.js)
+npm install -g claude-code
+
+# Option 2: Install via other package managers
+# (Check Claude-Code documentation for your preferred method)
+
+# After installation, verify:
+which claude-code
+claude-code --version
+```
+
+**Current Situation on Your System:**
+- Your existing sessions (PIDs 4521, 2410) are running `claude` command
+- The `claude` command IS actually `claude-code` (it's just aliased as `claude`)
+- The supervisor was looking for `claude-code` specifically, but now fixed to look for `claude`
+- **Your existing sessions CAN potentially be managed** (they're the same tool, just different command name)
+
+**The Fix Applied:**
+- Updated supervisor to look for both `claude` and `claude-code` commands
+- Now it will find your existing installation and use real claude-code instead of mock
+
+#### Via ChatGPT (Recommended)
+```bash
+# 1. Start supervisor (in one terminal)
+make run-supervisor
+
+# 2. Start MCP server (in another terminal)  
+make run-server
+
+# 3. Connect ChatGPT to your MCP server
+# 4. Use ChatGPT commands:
+```
+
+**ChatGPT Commands:**
+```
+"Create a new Claude-Code session called 'my-project'"
+"List my active sessions"
+"Send message to session 'my-project': 'ls -la'"
+"Show me logs from session 'my-project'"
+"Terminate session 'my-project'"
+```
+
+#### Via Direct HTTP API
+```bash
+# Create session
+curl -X POST http://localhost:8080/sessions \
+  -H "Content-Type: application/json" \
+  -d '{"name": "test-session", "working_dir": "/path/to/project"}'
+
+# List sessions
+curl http://localhost:8080/sessions
+
+# Send message
+curl -X POST http://localhost:8080/sessions/SESSION_ID/message \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Hello Claude-Code!"}'
+
+# Get logs
+curl http://localhost:8080/sessions/SESSION_ID/logs
+
+# Terminate session
+curl -X DELETE http://localhost:8080/sessions/SESSION_ID
+```
+
 ### 1. Test Locally with ChatGPT (Recommended)
 
 ```bash
 # Clone and setup
 git clone <your-repo>
 cd claude-code-mcp-controller
+make setup
 
-# Install dependencies (using uv package manager - recommended)
-uv venv
-uv pip install "fastmcp>=2.12.4" "pexpect>=4.8.0" "psutil>=5.9.0" "aiohttp>=3.8.0" "aiohttp-cors>=0.7.0" "structlog>=23.1.0" "prometheus-client>=0.17.0"
+# Start supervisor (Terminal 1)
+make run-supervisor
 
-# Alternative: using Python 3.10+ with pip (if you encounter issues with uv)
-# python3 -m pip install -r requirements.txt
+# Start MCP server (Terminal 2)
+make run-server
 
-# Start supervisor
-python3 supervisor/main.py
-```
+# Start ngrok tunnel (Terminal 3)
+make ngrok
 
-**In another terminal:**
-```bash
-# Start FastMCP server
-python3 start_mcp_server.py
-
-# In a third terminal, make server public for ChatGPT
-ngrok http 8000
+# Test the system (Terminal 4)
+make test
 ```
 
 **Configure ChatGPT:**
@@ -131,16 +256,21 @@ Test the **real end-to-end experience** with ChatGPT locally before deploying:
 
 ```bash
 # Terminal 1: Start supervisor
-python3 supervisor/main.py
+make run-supervisor
 
-# Terminal 2: Start FastMCP server
-python3 -c "from server import mcp; mcp.run(transport='http', host='0.0.0.0', port=8000, path='/mcp')"
+# Terminal 2: Start MCP server
+make run-server
+
+# Terminal 3: Start ngrok tunnel
+make ngrok
+
+# Terminal 4: Test the system
+make test
 ```
 
 **Then connect ChatGPT:**
-1. **Make public**: `ngrok http 8000`
-2. **Configure ChatGPT**: Add MCP connector with `https://your-ngrok-url.ngrok-free.app/mcp`
-3. **Test mobile workflow**: Use ChatGPT mobile app to control Claude-Code remotely
+1. **Configure ChatGPT**: Add MCP connector with `https://your-ngrok-url.ngrok-free.app/mcp`
+2. **Test mobile workflow**: Use ChatGPT mobile app to control Claude-Code remotely
 
 **Test scenarios in ChatGPT:**
 ```
@@ -156,15 +286,14 @@ python3 -c "from server import mcp; mcp.run(transport='http', host='0.0.0.0', po
 For code validation and CI/CD:
 
 ```bash
-# Validate FastMCP patterns
-python3 pattern_validation.py
+# Test the system
+make test
 
-# Test server import and tools
-python3 test_client.py
+# Format code
+make format
 
-# Test specific components
-python3 supervisor/main.py  # Test supervisor
-python3 server.py           # Test MCP server (STDIO)
+# Lint code
+make lint
 ```
 
 ### Local vs Production Testing
@@ -205,7 +334,32 @@ python3 server.py           # Test MCP server (STDIO)
 
 See [`deploy/README.md`](deploy/README.md) for detailed deployment guides.
 
-## 🔒 Security Features (MCP 2025-03-26 Compliant)
+## 🔒 Security Architecture & Session Management
+
+### Why the Supervisor Only Manages Sessions It Creates
+
+**Important**: The supervisor **only tracks sessions it creates** - this is intentional security design, not a limitation.
+
+#### 🔒 Security Principles
+- **Session Isolation**: Each session is sandboxed with controlled lifecycle
+- **Process Ownership**: Only manages processes it spawns (prevents hijacking)
+- **Secure IDs**: Cryptographically secure UUIDs for all session identifiers  
+- **Audit Trail**: Complete tracking of session creation → management → termination
+- **Least Privilege**: No automatic access to external processes
+
+#### 🎯 What This Means
+- ✅ **Safe**: Can't accidentally control random processes on your system
+- ✅ **Predictable**: All sessions follow same security model
+- ✅ **Auditable**: Complete history of session management
+- ❌ **Convenient**: Won't auto-detect existing Claude-Code sessions
+
+#### 🔄 Architecture Flow
+```
+ChatGPT → MCP Server → Supervisor → SessionManager → ClaudeWrapper → Claude-Code Process
+```
+Each layer adds security controls and isolation.
+
+### Security Features (MCP 2025-03-26 Compliant)
 
 - 🔐 **OAuth 2.1 with PKCE**: RFC-compliant authorization flows
 - 🏢 **Dynamic Client Registration**: RFC7591 support for new clients
@@ -283,9 +437,10 @@ This is an open-source project designed for the Claude-Code community!
 
 1. **Fork the repo**
 2. **Create feature branch**: `git checkout -b feature/amazing-feature`
-3. **Test your changes**: `python3 scripts/test-local.py`
-4. **Commit with good messages**: Follow our commit message format
-5. **Submit pull request**
+3. **Setup and test**: `make setup && make test`
+4. **Format and lint**: `make format && make lint`
+5. **Commit with good messages**: Follow our commit message format
+6. **Submit pull request**
 
 ## 📄 License
 

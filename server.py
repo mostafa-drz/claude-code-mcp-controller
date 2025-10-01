@@ -9,23 +9,20 @@ Built following FastMCP 2.0 documentation and best practices.
 
 import asyncio
 import logging
-import os
 from datetime import datetime
 from typing import Dict, List, Optional
 
 import aiohttp
 from fastmcp import FastMCP
 
+from config import config
+
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=getattr(logging, config.LOG_LEVEL))
 logger = logging.getLogger(__name__)
 
 # Initialize FastMCP server
 mcp = FastMCP("Claude-Code Controller 🚀")
-
-# Configuration
-SUPERVISOR_URL = os.getenv("SUPERVISOR_URL", "http://localhost:8080")
-SUPERVISOR_TIMEOUT = 30
 
 # HTTP session for supervisor communication
 http_session: Optional[aiohttp.ClientSession] = None
@@ -43,7 +40,7 @@ async def get_http_session() -> aiohttp.ClientSession:
 
         connector = aiohttp.TCPConnector(ssl=ssl_context)
         http_session = aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=SUPERVISOR_TIMEOUT),
+            timeout=aiohttp.ClientTimeout(total=config.SUPERVISOR_TIMEOUT),
             connector=connector
         )
     return http_session
@@ -53,7 +50,7 @@ async def supervisor_request(method: str, endpoint: str, **kwargs) -> Dict:
     """Make a request to the supervisor HTTP API."""
     try:
         session = await get_http_session()
-        url = f"{SUPERVISOR_URL}{endpoint}"
+        url = f"{config.SUPERVISOR_URL}{endpoint}"
 
         logger.info(f"Making {method} request to supervisor: {url}")
 
@@ -466,7 +463,7 @@ async def cleanup():
 if __name__ == "__main__":
     try:
         logger.info(f"Starting Claude-Code MCP Controller")
-        logger.info(f"Supervisor URL: {SUPERVISOR_URL}")
+        logger.info(f"Supervisor URL: {config.SUPERVISOR_URL}")
 
         # Register cleanup function
         import atexit

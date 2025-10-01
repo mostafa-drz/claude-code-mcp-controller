@@ -38,11 +38,11 @@ class ClaudeWrapper:
             # Start claude-code in the specified directory
             # For testing, use mock if claude-code is not available
             try:
-                # Try to find claude-code in PATH
+                # Try to find claude or claude-code in PATH (claude is the actual command)
                 import shutil
-                claude_cmd = shutil.which("claude-code")
+                claude_cmd = shutil.which("claude") or shutil.which("claude-code")
                 if claude_cmd:
-                    cmd = "claude-code"
+                    cmd = claude_cmd
                 else:
                     # Fall back to mock for testing
                     cmd = f"python3 {os.path.dirname(__file__)}/../scripts/mock-claude-code.py"

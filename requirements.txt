@@ -1,5 +1,5 @@
 # FastMCP framework
-fastmcp>=2.0.0
+fastmcp>=2.12.4
 
 # Process and PTY management
 pexpect>=4.8.0

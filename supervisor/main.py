@@ -13,11 +13,12 @@ from typing import Dict
 import json
 from aiohttp import web, WSMsgType
 import aiohttp_cors
+from ..config import config
 from .session_manager import SessionManager
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, config.LOG_LEVEL),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -26,9 +27,9 @@ logger = logging.getLogger(__name__)
 class SupervisorServer:
     """HTTP/WebSocket server for supervisor communication."""
 
-    def __init__(self, host: str = "localhost", port: int = 8080):
-        self.host = host
-        self.port = port
+    def __init__(self, host: str = None, port: int = None):
+        self.host = host or config.SUPERVISOR_HOST
+        self.port = port or config.SUPERVISOR_PORT
         self.session_manager = SessionManager()
         self.app = web.Application()
         self.setup_routes()

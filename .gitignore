@@ -22,33 +22,46 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Virtual environments
-.env
-.venv
-env/
+# Virtual Environment
+.venv/
 venv/
 ENV/
-env.bak/
-venv.bak/
+env/
+.env
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Logs
 *.log
 logs/
 
-# Config files with secrets
-config.local.json
-.env.local
-secrets.json
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
 
-# FastMCP specific
-.fastmcp/
+# Project specific
+*.pid
+*.sock
+.pytest_cache/
+.coverage
+htmlcov/
+
+# MCP specific
+mcp_config.json
+session_data/

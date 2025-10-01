@@ -160,7 +160,7 @@ class LocalTester:
 
         try:
             # Set environment variable for supervisor URL
-            os.environ["SUPERVISOR_URL"] = "http://localhost:8080"
+            # Use default config values
 
             # Import and test MCP server functions
             from server import supervisor_request
