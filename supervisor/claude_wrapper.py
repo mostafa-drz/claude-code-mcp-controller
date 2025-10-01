@@ -1,120 +1,62 @@
 """
-Claude-Code Process Wrapper
+Claude-Code Session Wrapper
 
-Handles PTY-based communication with Claude-Code processes.
-Manages session lifecycle, input/output, and interactive prompts.
+Handles tmux-based communication with existing Claude-Code sessions.
+Manages session communication, input/output, and interactive prompts.
 """
 
 import asyncio
 import logging
 import os
-import signal
-import time
+import subprocess
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
-import pexpect
-import psutil
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 
 class ClaudeWrapper:
-    """Wrapper for a single Claude-Code process with PTY communication."""
+    """Wrapper for a single tmux session running Claude-Code."""
 
     def __init__(self, session_id: str, working_dir: Optional[str] = None):
-        self.session_id = session_id
+        self.session_id = session_id  # Should match tmux session name (e.g., claude-web-app)
         self.working_dir = working_dir or os.getcwd()
-        self.process: Optional[pexpect.spawn] = None
         self.created_at = datetime.now()
         self.last_activity = datetime.now()
         self.log_buffer: List[str] = []
         self.max_log_lines = 1000
 
-    async def start(self) -> bool:
-        """Start a new Claude-Code process optimized for ChatGPT responsiveness."""
-        try:
-            logger.info(f"Starting Claude-Code session {self.session_id}")
-
-            # Start claude-code in the specified directory
-            # For testing, use mock if claude-code is not available
-            try:
-                # Try to find claude or claude-code in PATH (claude is the actual command)
-                import shutil
-                claude_cmd = shutil.which("claude") or shutil.which("claude-code")
-                if claude_cmd:
-                    cmd = claude_cmd
-                else:
-                    # Fall back to mock for testing
-                    cmd = f"python3 {os.path.dirname(__file__)}/../scripts/mock-claude-code.py"
-            except:
-                cmd = f"python3 {os.path.dirname(__file__)}/../scripts/mock-claude-code.py"
-
-            self.process = pexpect.spawn(
-                cmd,
-                cwd=self.working_dir,
-                encoding='utf-8',
-                timeout=10  # Reduced from 30s for faster failure detection
-            )
-
-            # OPTIMIZATION: Minimal wait for ChatGPT responsiveness
-            # Just verify process started, don't wait for full initialization
-            await asyncio.sleep(0.5)  # Quick check instead of full wait
-
-            if self.process.isalive():
-                # Mark as started, let initialization happen in background
-                self._add_to_log("SESSION: Starting up...")
-                logger.info(f"Claude-Code session {self.session_id} started successfully")
-
-                # Schedule background initialization
-                asyncio.create_task(self._background_initialization())
-                return True
-            else:
-                raise RuntimeError("Process failed to start")
-
-        except Exception as e:
-            logger.error(f"Failed to start session {self.session_id}: {e}")
-            return False
-
-    async def _background_initialization(self):
-        """Complete initialization in background without blocking creation."""
-        try:
-            # Wait for actual ready state
-            await self._wait_for_ready()
-            self._add_to_log("SESSION: Ready for commands")
-        except Exception as e:
-            logger.warning(f"Background initialization warning for {self.session_id}: {e}")
-            self._add_to_log("SESSION: Initialization completed with warnings")
 
     async def send_message(self, message: str) -> Dict:
-        """Send a message to the Claude-Code session."""
-        if not self.process or not self.process.isalive():
-            raise RuntimeError(f"Session {self.session_id} is not active")
-
+        """Send a message to the tmux session running Claude-Code."""
         try:
             logger.info(f"Sending message to session {self.session_id}: {message[:100]}...")
 
-            # Send the message
-            self.process.sendline(message)
-            self.last_activity = datetime.now()
+            # Send message to tmux session
+            result = subprocess.run(
+                ["tmux", "send-keys", "-t", self.session_id, message, "Enter"],
+                capture_output=True,
+                text=True,
+                check=False
+            )
 
-            # Capture immediate response
-            response_lines = []
-            try:
-                # Wait for some output (non-blocking)
-                self.process.expect([pexpect.TIMEOUT], timeout=2)
-                if self.process.before:
-                    response_lines.append(self.process.before)
-            except pexpect.TIMEOUT:
-                pass
+            if result.returncode != 0:
+                raise RuntimeError(f"Failed to send message to tmux session {self.session_id}: {result.stderr}")
+
+            self.last_activity = datetime.now()
 
             # Add to log buffer
             self._add_to_log(f"USER: {message}")
-            if response_lines:
-                self._add_to_log("".join(response_lines))
+
+            # Capture current output after a brief pause
+            await asyncio.sleep(0.5)
+            current_output = await self._capture_output()
+            if current_output:
+                self._add_to_log(current_output)
 
             return {
                 "status": "sent",
-                "immediate_response": "".join(response_lines),
+                "immediate_response": current_output,
                 "timestamp": self.last_activity.isoformat()
             }
 
@@ -123,29 +65,38 @@ class ClaudeWrapper:
             raise
 
     async def get_logs(self, lines: int = 50, mobile_friendly: bool = False) -> List[str]:
-        """Get recent log lines from the session, optimized for ChatGPT display."""
-        logs = self.log_buffer[-lines:] if self.log_buffer else []
+        """Get recent log lines from tmux session."""
+        try:
+            # Capture current tmux pane content
+            result = subprocess.run(
+                ["tmux", "capture-pane", "-t", self.session_id, "-p"],
+                capture_output=True,
+                text=True,
+                check=False
+            )
 
-        if mobile_friendly:
-            # MOBILE OPTIMIZATION: Format logs for ChatGPT mobile app
-            mobile_logs = []
-            for log in logs:
-                # Truncate long lines that cause horizontal scrolling in ChatGPT mobile
-                if len(log) > 80:
-                    # Keep timestamp and truncate content intelligently
-                    if ']' in log:
-                        timestamp_part = log.split(']', 1)[0] + ']'
-                        content_part = log.split(']', 1)[1] if len(log.split(']', 1)) > 1 else ""
-                        if len(content_part) > 50:
-                            content_part = content_part[:47] + "..."
-                        mobile_logs.append(timestamp_part + content_part)
+            if result.returncode != 0:
+                logger.warning(f"Failed to capture logs from tmux session {self.session_id}")
+                return []
+
+            output_lines = result.stdout.strip().split('\n') if result.stdout.strip() else []
+            recent_lines = output_lines[-lines:] if output_lines else []
+
+            if mobile_friendly:
+                # Mobile optimization: truncate long lines
+                mobile_logs = []
+                for line in recent_lines:
+                    if len(line) > 80:
+                        mobile_logs.append(line[:77] + "...")
                     else:
-                        mobile_logs.append(log[:77] + "...")
-                else:
-                    mobile_logs.append(log)
-            return mobile_logs
+                        mobile_logs.append(line)
+                return mobile_logs
 
-        return logs
+            return recent_lines
+
+        except Exception as e:
+            logger.error(f"Error getting logs from session {self.session_id}: {e}")
+            return []
 
     def format_logs_for_chatgpt(self, logs: List[str], max_lines: int = 10) -> str:
         """Format logs as a readable string for ChatGPT responses."""
@@ -163,59 +114,85 @@ class ClaudeWrapper:
         return formatted
 
     async def get_status(self) -> Dict:
-        """Get current session status."""
-        is_alive = self.process and self.process.isalive()
+        """Get current tmux session status."""
+        # Check if tmux session exists
+        try:
+            result = subprocess.run(
+                ["tmux", "has-session", "-t", self.session_id],
+                capture_output=True,
+                check=False
+            )
+            is_active = result.returncode == 0
+        except Exception:
+            is_active = False
 
-        status = {
+        return {
             "session_id": self.session_id,
-            "status": "active" if is_alive else "terminated",
+            "status": "active" if is_active else "terminated",
             "created_at": self.created_at.isoformat(),
             "last_activity": self.last_activity.isoformat(),
-            "working_dir": self.working_dir,
-            "log_lines": len(self.log_buffer)
+            "working_dir": self.working_dir
         }
 
-        if is_alive and self.process:
-            status.update({
-                "pid": self.process.pid,
-                "memory_usage": self._get_memory_usage()
-            })
-
-        return status
-
     async def terminate(self) -> bool:
-        """Terminate the Claude-Code session."""
-        if not self.process:
-            return True
-
+        """Terminate the tmux session."""
         try:
-            logger.info(f"Terminating session {self.session_id}")
+            logger.info(f"Terminating tmux session {self.session_id}")
 
-            # Try graceful termination first
-            self.process.sendcontrol('c')  # Send Ctrl+C
+            # Try graceful termination first - send Ctrl+C
+            result = subprocess.run(
+                ["tmux", "send-keys", "-t", self.session_id, "C-c"],
+                capture_output=True,
+                text=True,
+                check=False
+            )
             await asyncio.sleep(1)
 
-            if self.process.isalive():
-                self.process.terminate()
-                await asyncio.sleep(1)
+            # Check if session still exists
+            check_result = subprocess.run(
+                ["tmux", "has-session", "-t", self.session_id],
+                capture_output=True,
+                check=False
+            )
 
-            if self.process.isalive():
-                self.process.kill(signal.SIGKILL)
+            if check_result.returncode == 0:
+                # Session still exists, force kill it
+                kill_result = subprocess.run(
+                    ["tmux", "kill-session", "-t", self.session_id],
+                    capture_output=True,
+                    text=True,
+                    check=False
+                )
+                if kill_result.returncode != 0:
+                    logger.warning(f"Failed to kill tmux session {self.session_id}: {kill_result.stderr}")
+                    return False
 
-            logger.info(f"Session {self.session_id} terminated")
+            logger.info(f"Tmux session {self.session_id} terminated")
             return True
 
         except Exception as e:
-            logger.error(f"Error terminating session {self.session_id}: {e}")
+            logger.error(f"Error terminating tmux session {self.session_id}: {e}")
             return False
 
     async def check_for_prompts(self) -> Optional[str]:
-        """Check if Claude-Code is waiting for user input."""
-        if not self.process or not self.process.isalive():
-            return None
-
+        """Check if Claude-Code is waiting for user input by examining recent output."""
         try:
-            # Non-blocking check for common prompt patterns
+            # Check if tmux session exists
+            result = subprocess.run(
+                ["tmux", "has-session", "-t", self.session_id],
+                capture_output=True,
+                check=False
+            )
+            if result.returncode != 0:
+                return None
+
+            # Get recent output from tmux session
+            output = await self._capture_output()
+            if not output:
+                return None
+
+            # Check for common prompt patterns in the output
+            import re
             patterns = [
                 r".*\[y/n\].*",  # Yes/no prompts
                 r".*\(y/N\).*",  # Yes/no with default
@@ -223,14 +200,14 @@ class ClaudeWrapper:
                 r".*Enter.*:",  # Input prompts
             ]
 
-            index = self.process.expect(patterns + [pexpect.TIMEOUT], timeout=0.1)
-            if index < len(patterns):
-                prompt_text = self.process.before + self.process.after
-                self._add_to_log(f"PROMPT: {prompt_text}")
-                return prompt_text
+            # Look at the last few lines for prompts
+            lines = output.split('\n')[-3:]
+            for line in lines:
+                for pattern in patterns:
+                    if re.search(pattern, line, re.IGNORECASE):
+                        self._add_to_log(f"PROMPT: {line}")
+                        return line
 
-        except pexpect.TIMEOUT:
-            pass
         except Exception as e:
             logger.warning(f"Error checking for prompts in session {self.session_id}: {e}")
 
@@ -238,17 +215,55 @@ class ClaudeWrapper:
 
     async def respond_to_prompt(self, response: str) -> bool:
         """Respond to an interactive prompt."""
-        if not self.process or not self.process.isalive():
-            return False
-
         try:
-            self.process.sendline(response)
+            # Check if tmux session exists
+            result = subprocess.run(
+                ["tmux", "has-session", "-t", self.session_id],
+                capture_output=True,
+                check=False
+            )
+            if result.returncode != 0:
+                return False
+
+            # Send response to tmux session
+            result = subprocess.run(
+                ["tmux", "send-keys", "-t", self.session_id, response, "Enter"],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+
+            if result.returncode != 0:
+                logger.error(f"Failed to send response to tmux session {self.session_id}: {result.stderr}")
+                return False
+
             self._add_to_log(f"PROMPT_RESPONSE: {response}")
             self.last_activity = datetime.now()
             return True
+
         except Exception as e:
             logger.error(f"Error responding to prompt in session {self.session_id}: {e}")
             return False
+
+    async def _capture_output(self) -> str:
+        """Capture current output from tmux session."""
+        try:
+            result = subprocess.run(
+                ["tmux", "capture-pane", "-t", self.session_id, "-p"],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+
+            if result.returncode != 0:
+                logger.warning(f"Failed to capture output from tmux session {self.session_id}")
+                return ""
+
+            return result.stdout.strip()
+
+        except Exception as e:
+            logger.error(f"Error capturing output from session {self.session_id}: {e}")
+            return ""
 
     def _add_to_log(self, line: str):
         """Add a line to the log buffer with timestamp."""
@@ -259,22 +274,3 @@ class ClaudeWrapper:
         if len(self.log_buffer) > self.max_log_lines:
             self.log_buffer = self.log_buffer[-self.max_log_lines//2:]
 
-    async def _wait_for_ready(self):
-        """Wait for Claude-Code to be ready for input."""
-        try:
-            # Wait for the initial prompt or ready state
-            self.process.expect([pexpect.TIMEOUT], timeout=5)
-            if self.process.before:
-                self._add_to_log(f"STARTUP: {self.process.before}")
-        except pexpect.TIMEOUT:
-            pass  # Timeout is expected for non-blocking wait
-
-    def _get_memory_usage(self) -> Optional[float]:
-        """Get memory usage of the process in MB."""
-        try:
-            if self.process and self.process.pid:
-                proc = psutil.Process(self.process.pid)
-                return proc.memory_info().rss / 1024 / 1024  # Convert to MB
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
-        return None
