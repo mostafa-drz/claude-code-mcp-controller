@@ -7,6 +7,7 @@ between the MCP server and individual Claude-Code processes.
 
 import asyncio
 import logging
+import os
 import subprocess
 import uuid
 from datetime import datetime
@@ -52,22 +53,30 @@ class SessionManager:
             return []
 
     async def create_session(self, name: Optional[str] = None, working_dir: Optional[str] = None) -> str:
-        """Create a new Claude-Code session."""
+        """Create a new tmux session running Claude-Code."""
         async with self._lock:
-            session_id = f"{name or 'session'}_{str(uuid.uuid4())[:8]}"
+            # Use claude- prefix for consistency with discovery
+            session_name = f"claude-{name or 'session'}"
 
-            logger.info(f"Creating new session: {session_id}")
+            logger.info(f"Creating new tmux session: {session_name}")
 
-            wrapper = ClaudeWrapper(session_id, working_dir)
-            success = await wrapper.start()
+            # Create tmux session with claude-code command
+            # Try to find claude or claude-code command
+            claude_cmd = "claude"  # Default to what the user has installed
 
-            if not success:
-                raise RuntimeError(f"Failed to start session {session_id}")
+            cmd = [
+                "tmux", "new-session", "-d", "-s", session_name,
+                "-c", working_dir or os.getcwd(),  # Set working directory
+                claude_cmd
+            ]
 
-            self.sessions[session_id] = wrapper
-            logger.info(f"Session {session_id} created successfully")
+            result = subprocess.run(cmd, capture_output=True, text=True, check=False)
 
-            return session_id
+            if result.returncode != 0:
+                raise RuntimeError(f"Failed to create tmux session {session_name}: {result.stderr}")
+
+            logger.info(f"Tmux session {session_name} created successfully")
+            return session_name
 
     async def list_sessions(self) -> List[Dict]:
         """List all active tmux sessions named claude-* with their status."""
