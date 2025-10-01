@@ -127,14 +127,20 @@ class SessionManager:
     async def terminate_session(self, session_id: str) -> bool:
         """Terminate a specific session."""
         async with self._lock:
-            wrapper = self.sessions.get(session_id)
+            # Try to get wrapper (from tracked sessions or discover from tmux)
+            wrapper = await self.get_session(session_id)
             if not wrapper:
+                logger.warning(f"Session {session_id} not found for termination")
                 return False
 
             success = await wrapper.terminate()
             if success:
-                del self.sessions[session_id]
-                logger.info(f"Session {session_id} terminated and removed")
+                # Remove from tracked sessions if it was there
+                if session_id in self.sessions:
+                    del self.sessions[session_id]
+                logger.info(f"Session {session_id} terminated successfully")
+            else:
+                logger.error(f"Failed to terminate session {session_id}")
 
             return success
 
