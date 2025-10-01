@@ -70,18 +70,34 @@ class SessionManager:
             return session_id
 
     async def list_sessions(self) -> List[Dict]:
-        """List all active sessions with their status."""
+        """List all active tmux sessions named claude-* with their status."""
         async with self._lock:
+            # Discover existing tmux sessions
+            tmux_sessions = await self.discover_tmux_sessions()
+
             sessions = []
-            for session_id, wrapper in self.sessions.items():
+            for session_name in tmux_sessions:
+                # Create wrapper for existing session (don't track in self.sessions yet)
+                wrapper = ClaudeWrapper(session_name)
                 status = await wrapper.get_status()
                 sessions.append(status)
 
             return sessions
 
     async def get_session(self, session_id: str) -> Optional[ClaudeWrapper]:
-        """Get a session by ID."""
-        return self.sessions.get(session_id)
+        """Get a session by ID from tracked sessions or discover from tmux."""
+        # First try tracked sessions
+        if session_id in self.sessions:
+            return self.sessions[session_id]
+
+        # Check if it's an existing tmux session
+        tmux_sessions = await self.discover_tmux_sessions()
+        if session_id in tmux_sessions:
+            # Create wrapper for existing tmux session
+            wrapper = ClaudeWrapper(session_id)
+            return wrapper
+
+        return None
 
     async def send_message(self, session_id: str, message: str) -> Dict:
         """Send a message to a specific session."""
