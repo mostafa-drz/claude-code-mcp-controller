@@ -7,10 +7,11 @@ between the MCP server and individual Claude-Code processes.
 
 import asyncio
 import logging
+import subprocess
 import uuid
 from datetime import datetime
 from typing import Dict, List, Optional
-from .claude_wrapper import ClaudeWrapper
+from claude_wrapper import ClaudeWrapper
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,34 @@ class SessionManager:
     def __init__(self):
         self.sessions: Dict[str, ClaudeWrapper] = {}
         self._lock = asyncio.Lock()
+
+    async def discover_tmux_sessions(self) -> List[str]:
+        """Discover existing tmux sessions named claude-*."""
+        try:
+            result = subprocess.run(
+                ["tmux", "list-sessions"],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+
+            if result.returncode != 0:
+                logger.info("No tmux sessions found or tmux not running")
+                return []
+
+            sessions = []
+            for line in result.stdout.strip().split('\n'):
+                if line.startswith('claude-'):
+                    # Extract session name (everything before the first colon)
+                    session_name = line.split(':')[0]
+                    sessions.append(session_name)
+                    logger.info(f"Discovered tmux session: {session_name}")
+
+            return sessions
+
+        except Exception as e:
+            logger.error(f"Error discovering tmux sessions: {e}")
+            return []
 
     async def create_session(self, name: Optional[str] = None, working_dir: Optional[str] = None) -> str:
         """Create a new Claude-Code session."""
