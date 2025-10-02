@@ -32,7 +32,7 @@ class ClaudeWrapper:
 
             # Send message to tmux session
             result = subprocess.run(
-                ["tmux", "send-keys", "-t", self.session_id, message, "Enter"],
+                ["tmux", "send-keys", "-t", self.session_id, message, "C-m"],
                 capture_output=True,
                 text=True,
                 check=False
@@ -43,8 +43,8 @@ class ClaudeWrapper:
 
             self.last_activity = datetime.now()
 
-            # Capture current output after a brief pause
-            await asyncio.sleep(0.5)
+            # Capture current output after allowing time for processing
+            await asyncio.sleep(2.0)  # Increased wait time for Claude to process
             current_output = await self._capture_output()
 
             return {
@@ -219,7 +219,7 @@ class ClaudeWrapper:
 
             # Send response to tmux session
             result = subprocess.run(
-                ["tmux", "send-keys", "-t", self.session_id, response, "Enter"],
+                ["tmux", "send-keys", "-t", self.session_id, response, "C-m"],
                 capture_output=True,
                 text=True,
                 check=False
