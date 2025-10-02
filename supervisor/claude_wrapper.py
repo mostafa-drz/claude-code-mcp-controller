@@ -32,7 +32,7 @@ class ClaudeWrapper:
 
             # Send message to tmux session
             result = subprocess.run(
-                ["tmux", "send-keys", "-t", self.session_id, message, "C-m"],
+                ["tmux", "send-keys", "-t", self.session_id, message, "Enter"],
                 capture_output=True,
                 text=True,
                 check=False
@@ -219,7 +219,7 @@ class ClaudeWrapper:
 
             # Send response to tmux session
             result = subprocess.run(
-                ["tmux", "send-keys", "-t", self.session_id, response, "C-m"],
+                ["tmux", "send-keys", "-t", self.session_id, response, "Enter"],
                 capture_output=True,
                 text=True,
                 check=False
