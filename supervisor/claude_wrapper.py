@@ -216,8 +216,41 @@ class ClaudeWrapper:
 
         return None
 
-    async def respond_to_prompt(self, response: str) -> bool:
-        """Respond to an interactive prompt."""
+    async def press_key(self, key: str) -> bool:
+        """
+        Press a single key (useful for [y/n] prompts).
+
+        Args:
+            key: The key to press (e.g., "y", "n", "Enter", "C-c" for Ctrl+C)
+        """
+        try:
+            result = subprocess.run(
+                ["tmux", "send-keys", "-t", self.session_id, key],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+
+            if result.returncode != 0:
+                logger.error(f"Failed to press key in tmux session {self.session_id}: {result.stderr}")
+                return False
+
+            self.last_activity = datetime.now()
+            return True
+
+        except Exception as e:
+            logger.error(f"Error pressing key in session {self.session_id}: {e}")
+            return False
+
+    async def respond_to_prompt(self, response: str, press_enter: bool = True) -> bool:
+        """
+        Respond to an interactive prompt (like [y/n] or Enter password:).
+
+        Args:
+            response: The text or key to send (e.g., "y", "yes", "password123")
+            press_enter: Whether to press Enter after sending the response (default: True)
+                        Set to False for single-key prompts like [y/n]
+        """
         try:
             # Check if tmux session exists
             result = subprocess.run(
@@ -228,9 +261,9 @@ class ClaudeWrapper:
             if result.returncode != 0:
                 return False
 
-            # Send response to tmux session
+            # Send the response text/key
             result = subprocess.run(
-                ["tmux", "send-keys", "-t", self.session_id, response, "Enter"],
+                ["tmux", "send-keys", "-t", self.session_id, response],
                 capture_output=True,
                 text=True,
                 check=False
@@ -239,6 +272,18 @@ class ClaudeWrapper:
             if result.returncode != 0:
                 logger.error(f"Failed to send response to tmux session {self.session_id}: {result.stderr}")
                 return False
+
+            # Optionally press Enter (for text responses that need submission)
+            if press_enter:
+                enter_result = subprocess.run(
+                    ["tmux", "send-keys", "-t", self.session_id, "Enter"],
+                    capture_output=True,
+                    text=True,
+                    check=False
+                )
+                if enter_result.returncode != 0:
+                    logger.error(f"Failed to send Enter key to tmux session {self.session_id}: {enter_result.stderr}")
+                    return False
 
             self.last_activity = datetime.now()
             return True
