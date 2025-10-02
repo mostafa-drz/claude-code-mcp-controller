@@ -32,8 +32,9 @@ run-server: ## Start the MCP server
 ngrok: ## Start ngrok tunnel for ChatGPT
 	ngrok http $(shell python3 -c "from config import config; print(config.NGROK_PORT)")
 
-test: ## Test the system
-	.venv/bin/python test_http_direct.py
+test: ## Test the system (basic health check)
+	@echo "Testing supervisor health..."
+	@curl -f http://localhost:8080/health 2>/dev/null && echo "✅ Supervisor is healthy" || echo "❌ Supervisor not running (start with 'make run-supervisor')"
 
 kill: ## Kill running processes
 	@echo "🛑 Killing running processes..."

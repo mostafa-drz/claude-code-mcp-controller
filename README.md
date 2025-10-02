@@ -2,6 +2,18 @@
 
 A local MCP (Model Context Protocol) server for remotely controlling and monitoring Claude-Code sessions via ChatGPT mobile. Perfect for mobile workflows, remote development, and managing multiple coding sessions from anywhere.
 
+## ⚠️ Important: Personal DIY Project
+
+**This is a personal DIY project for managing my own Claude-Code sessions via ChatGPT on mobile.**
+
+- ✅ **Works great** for personal/temporary use with ephemeral ngrok URLs
+- ❌ **NOT designed** for production or long-term deployment
+- ❌ **NO security hardening** (minimal auth, designed for temporary use)
+- 🎯 **Use case**: Temporary remote control via ChatGPT mobile while away from Mac
+- 🤝 **Community**: More robust solutions will likely emerge from the community soon
+
+**Use at your own risk.** If you need production-ready session management, please wait for community solutions or fork and harden this project.
+
 ## 🎯 What This Solves
 
 **Problem**: You're away from your Mac but need to check on or control your Claude-Code sessions.
@@ -54,6 +66,16 @@ ChatGPT: "✅ Response sent! Session will continue with installation."
                                                      │ • session_N     │
                                                      └─────────────────┘
 ```
+
+## 📋 Prerequisites
+
+Before you begin, ensure you have:
+
+- **Python 3.10+** installed
+- **tmux** installed (`brew install tmux` on macOS)
+- **ngrok** installed and configured (`brew install ngrok` on macOS)
+- **Claude Desktop/CLI** installed and working
+- **macOS** (tested on macOS, may work on Linux with modifications)
 
 ## 🚀 Quick Start
 
@@ -318,16 +340,17 @@ make lint
 - ✅ **Ephemeral Security**: ngrok URLs expire when tunnel closes
 - ⏳ **No Authentication**: Temporary until OpenAI fixes OAuth
 
-### Authentication Status
-**Current Reality:**
-- ChatGPT requires OAuth for MCP connectors (per OpenAI docs)
-- OAuth implementation is broken in ChatGPT (community confirmed)
-- No authentication works as temporary solution
-- Ephemeral ngrok URLs provide reasonable security for personal use
+### Security Status
+**Current Implementation:**
+- I couldn't get OAuth working with ChatGPT at this stage
+- ChatGPT's OAuth workflow for MCP connectors has known issues (community confirmed)
+- Using ephemeral ngrok URLs as a practical workaround for personal use
+- URLs expire when tunnel closes, limiting exposure window
 
-**Future:**
-- OAuth 2.1 + PKCE implementation ready
-- Will enable when OpenAI resolves ChatGPT OAuth issues
+**Important:**
+- This is a **DIY/personal project**, not production software
+- Use only for temporary sessions, not long-term deployment
+- OAuth will be implemented once ChatGPT properly supports it
 
 ### Why Not Cloud Deployment?
 Cloud deployment (FastMCP Cloud, etc.) **cannot solve the core use case**:
