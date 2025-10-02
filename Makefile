@@ -1,6 +1,6 @@
 # Claude-Code MCP Controller - Essential Commands
 
-.PHONY: help setup run-supervisor run-server test clean format lint ngrok
+.PHONY: help setup run-supervisor run-server test clean format lint ngrok kill
 
 help: ## Show available commands
 	@echo "Essential Commands:"
@@ -9,6 +9,7 @@ help: ## Show available commands
 	@echo "  make run-server    - Start MCP server"
 	@echo "  make ngrok         - Start ngrok tunnel for ChatGPT"
 	@echo "  make test          - Test the system"
+	@echo "  make kill          - Kill running processes"
 	@echo "  make format        - Format code"
 	@echo "  make lint          - Lint code"
 	@echo "  make clean         - Clean up files"
@@ -33,6 +34,13 @@ ngrok: ## Start ngrok tunnel for ChatGPT
 
 test: ## Test the system
 	.venv/bin/python test_http_direct.py
+
+kill: ## Kill running processes
+	@echo "🛑 Killing running processes..."
+	@pkill -f "python.*supervisor" || true
+	@pkill -f "python.*start_mcp_server" || true
+	@pkill -f "ngrok" || true
+	@echo "✅ Processes killed"
 
 format: ## Format code
 	.venv/bin/python -m black .

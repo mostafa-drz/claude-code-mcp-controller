@@ -64,6 +64,13 @@ ChatGPT: "✅ Response sent! Session will continue with installation."
 git clone <your-repo>
 cd claude-code-mcp-controller
 make setup
+
+# Add session creation alias to your shell
+echo "alias cs='claude_session() { tmux new-session -d -s \"claude-\${1:-session}\" -c \"\${2:-\$(pwd)}\" \"claude\" && echo \"✅ Started claude-\$1\"; }; claude_session'" >> ~/.zshrc
+source ~/.zshrc
+
+# Create your first Claude session
+cs myproject
 ```
 
 ### ⚙️ Configuration (Optional)
@@ -107,45 +114,48 @@ make lint              # Lint code
 make clean             # Clean up files
 ```
 
-### How to Run New Claude-Code Sessions with Supervisor
+### 🚀 Creating & Managing Claude Sessions
 
-**Important**: The supervisor creates and manages its own Claude-Code sessions for security. Here's how to use it:
+The supervisor discovers and manages tmux sessions with names starting with `claude-`. You can create sessions manually or via ChatGPT.
 
-#### 🔍 What Actually Happens
+#### Quick Setup: Shell Alias (Recommended)
 
-The supervisor tries to start `claude-code` from your PATH, but if it's not found, it uses a **mock script** for testing:
+Add this alias to your shell for easy session creation:
 
-1. **If `claude-code` is installed**: Supervisor runs `claude-code` in the specified directory
-2. **If `claude-code` is NOT installed**: Supervisor runs a mock script that simulates Claude-Code
-
-**To use real Claude-Code**, you need to install it first:
 ```bash
-# Check if claude-code is available:
-which claude-code
+# Add to ~/.zshrc or ~/.bashrc
+alias cs='claude_session() {
+    local name="${1:-session}"
+    local dir="${2:-$(pwd)}"
+    tmux new-session -d -s "claude-$name" -c "$dir" "claude" &&
+    echo "✅ Started claude-$name in $dir"
+    tmux list-sessions | grep "claude-$name"
+}; claude_session'
 
-# If not found (like on your system), you need to install it:
-# Option 1: Install via npm (if you have Node.js)
-npm install -g claude-code
-
-# Option 2: Install via other package managers
-# (Check Claude-Code documentation for your preferred method)
-
-# After installation, verify:
-which claude-code
-claude-code --version
+# Reload your shell config
+source ~/.zshrc  # or ~/.bashrc
 ```
 
-**Current Situation on Your System:**
-- Your existing sessions (PIDs 4521, 2410) are running `claude` command
-- The `claude` command IS actually `claude-code` (it's just aliased as `claude`)
-- The supervisor was looking for `claude-code` specifically, but now fixed to look for `claude`
-- **Your existing sessions CAN potentially be managed** (they're the same tool, just different command name)
+**Usage:**
+```bash
+# Create a session in current directory
+cs myproject
 
-**The Fix Applied:**
-- Updated supervisor to look for both `claude` and `claude-code` commands
-- Now it will find your existing installation and use real claude-code instead of mock
+# Create a session in specific directory
+cs webapp ~/projects/webapp
 
-#### Via ChatGPT (Recommended)
+# List all Claude sessions
+tmux list-sessions | grep claude-
+
+# Attach to a session to see what's happening
+tmux attach -t claude-myproject
+# (Detach with Ctrl+B, then D)
+
+# Kill a session when done
+tmux kill-session -t claude-myproject
+```
+
+#### Via ChatGPT (Once Connected)
 ```bash
 # 1. Start supervisor (in one terminal)
 make run-supervisor
