@@ -9,10 +9,9 @@ import asyncio
 import logging
 import os
 import subprocess
-import uuid
 from datetime import datetime
 from typing import Dict, List, Optional
-from claude_wrapper import ClaudeWrapper
+from .claude_wrapper import ClaudeWrapper
 
 logger = logging.getLogger(__name__)
 

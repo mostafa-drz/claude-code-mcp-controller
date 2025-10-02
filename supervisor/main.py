@@ -13,7 +13,10 @@ from typing import Dict
 import json
 from aiohttp import web, WSMsgType
 import aiohttp_cors
-from ..config import config
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from config import config
 from .session_manager import SessionManager
 
 # Configure logging

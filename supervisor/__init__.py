@@ -1,8 +1,8 @@
 """
 Claude-Code MCP Controller Supervisor
 
-Local supervisor module for managing Claude-Code processes via PTY.
-Provides session management, logging, and communication with the MCP server.
+Local supervisor module for managing existing Claude-Code sessions via tmux.
+Provides session discovery, communication, and management for MCP integration.
 """
 
 from .session_manager import SessionManager

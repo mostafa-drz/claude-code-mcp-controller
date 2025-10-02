@@ -23,8 +23,6 @@ class ClaudeWrapper:
         self.working_dir = working_dir or os.getcwd()
         self.created_at = datetime.now()
         self.last_activity = datetime.now()
-        self.log_buffer: List[str] = []
-        self.max_log_lines = 1000
 
 
     async def send_message(self, message: str) -> Dict:
@@ -45,14 +43,9 @@ class ClaudeWrapper:
 
             self.last_activity = datetime.now()
 
-            # Add to log buffer
-            self._add_to_log(f"USER: {message}")
-
             # Capture current output after a brief pause
             await asyncio.sleep(0.5)
             current_output = await self._capture_output()
-            if current_output:
-                self._add_to_log(current_output)
 
             return {
                 "status": "sent",
@@ -205,7 +198,6 @@ class ClaudeWrapper:
             for line in lines:
                 for pattern in patterns:
                     if re.search(pattern, line, re.IGNORECASE):
-                        self._add_to_log(f"PROMPT: {line}")
                         return line
 
         except Exception as e:
@@ -237,7 +229,6 @@ class ClaudeWrapper:
                 logger.error(f"Failed to send response to tmux session {self.session_id}: {result.stderr}")
                 return False
 
-            self._add_to_log(f"PROMPT_RESPONSE: {response}")
             self.last_activity = datetime.now()
             return True
 
@@ -265,12 +256,4 @@ class ClaudeWrapper:
             logger.error(f"Error capturing output from session {self.session_id}: {e}")
             return ""
 
-    def _add_to_log(self, line: str):
-        """Add a line to the log buffer with timestamp."""
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        self.log_buffer.append(f"[{timestamp}] {line}")
-
-        # Keep log buffer size manageable
-        if len(self.log_buffer) > self.max_log_lines:
-            self.log_buffer = self.log_buffer[-self.max_log_lines//2:]
 
