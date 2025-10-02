@@ -30,9 +30,9 @@ class ClaudeWrapper:
         try:
             logger.info(f"Sending message to session {self.session_id}: {message[:100]}...")
 
-            # Send message to tmux session
+            # Send message to tmux session (separate from Enter)
             result = subprocess.run(
-                ["tmux", "send-keys", "-t", self.session_id, message, "Enter"],
+                ["tmux", "send-keys", "-t", self.session_id, message],
                 capture_output=True,
                 text=True,
                 check=False
@@ -40,6 +40,17 @@ class ClaudeWrapper:
 
             if result.returncode != 0:
                 raise RuntimeError(f"Failed to send message to tmux session {self.session_id}: {result.stderr}")
+
+            # Separately send Enter key to submit
+            enter_result = subprocess.run(
+                ["tmux", "send-keys", "-t", self.session_id, "Enter"],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+
+            if enter_result.returncode != 0:
+                raise RuntimeError(f"Failed to send Enter key to tmux session {self.session_id}: {enter_result.stderr}")
 
             self.last_activity = datetime.now()
 
