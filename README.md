@@ -1,10 +1,12 @@
 # Claude-Code MCP Controller 🚀
 
-A local MCP (Model Context Protocol) server for remotely controlling and monitoring Claude-Code sessions via ChatGPT mobile. Perfect for mobile workflows, remote development, and managing multiple coding sessions from anywhere.
+A local [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server for remotely controlling and monitoring [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) sessions via [ChatGPT Custom Connectors](https://platform.openai.com/docs/mcp). Perfect for mobile workflows, remote development, and managing multiple coding sessions from anywhere.
 
 ## ⚠️ Important: Personal DIY Project
 
-**This is a personal DIY project for managing my own Claude-Code sessions via ChatGPT on mobile.**
+**This is a personal DIY project for managing my own Claude Code sessions via ChatGPT Custom Connectors on mobile.**
+
+The main focus is leveraging [ChatGPT Custom Connectors](https://platform.openai.com/docs/mcp), which are custom MCP servers that extend ChatGPT's capabilities.
 
 - ✅ **Works great** for personal/temporary use with ephemeral ngrok URLs
 - ❌ **NOT designed** for production or long-term deployment
@@ -18,7 +20,7 @@ A local MCP (Model Context Protocol) server for remotely controlling and monitor
 
 **Problem**: You're away from your Mac but need to check on or control your Claude-Code sessions.
 
-**Solution**: Use ChatGPT as a remote control for your Claude-Code sessions through MCP.
+**Solution**: Use [ChatGPT Custom Connectors](https://platform.openai.com/docs/mcp) as a remote control for your [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) sessions through [MCP](https://modelcontextprotocol.io/).
 
 ### Real-World Use Cases
 
@@ -46,7 +48,7 @@ You: "Tell it yes"
 ChatGPT: "✅ Response sent! Session will continue with installation."
 ```
 
-> **💡 Test this demo locally!** Start the server + supervisor, then `ngrok http 8000` to try it yourself with real ChatGPT before deploying.
+> **💡 Test this demo locally!** Start the server + supervisor, then [`ngrok http 8000`](https://ngrok.com/docs) to try it yourself with real ChatGPT before deploying.
 
 ## 🏗️ Architecture
 
@@ -71,10 +73,10 @@ ChatGPT: "✅ Response sent! Session will continue with installation."
 
 Before you begin, ensure you have:
 
-- **Python 3.10+** installed
-- **tmux** installed (`brew install tmux` on macOS)
-- **ngrok** installed and configured (`brew install ngrok` on macOS)
-- **Claude Desktop/CLI** installed and working
+- **[Python 3.10+](https://www.python.org/downloads/)** installed
+- **[tmux](https://github.com/tmux/tmux/wiki)** installed (`brew install tmux` on macOS)
+- **[ngrok](https://ngrok.com/)** installed and configured (`brew install ngrok` on macOS)
+- **[Claude Code](https://docs.claude.com/en/docs/claude-code/overview)** installed and working
 - **macOS** (tested on macOS, may work on Linux with modifications)
 
 ## 🚀 Quick Start
@@ -138,7 +140,7 @@ make clean             # Clean up files
 
 ### 🚀 Creating & Managing Claude Sessions
 
-The supervisor discovers and manages tmux sessions with names starting with `claude-`. You can create sessions manually or via ChatGPT.
+The supervisor discovers and manages [tmux](https://github.com/tmux/tmux/wiki) sessions with names starting with `claude-`. You can create sessions manually or via ChatGPT.
 
 #### Quick Setup: Shell Alias (Recommended)
 
@@ -335,8 +337,8 @@ make lint
 
 ### Current: Local with ngrok (Recommended)
 - ✅ **Direct Mac Access**: Control local Claude sessions
-- ✅ **FastMCP 2.12.4**: Production-ready MCP framework
-- ✅ **SSE Transport**: JSON-RPC 2.0 over HTTPS via ngrok
+- ✅ **[FastMCP 2.12.4](https://github.com/jlowin/fastmcp)**: Production-ready MCP framework
+- ✅ **SSE Transport**: [JSON-RPC 2.0](https://www.jsonrpc.org/specification) over HTTPS via [ngrok](https://ngrok.com/)
 - ✅ **Ephemeral Security**: ngrok URLs expire when tunnel closes
 - ⏳ **No Authentication**: Temporary until OpenAI fixes OAuth
 
@@ -394,9 +396,9 @@ Each layer adds security controls and isolation.
 - ⏳ **Ephemeral URLs**: ngrok tunnels expire when closed
 
 **Ready for OAuth (when ChatGPT fixes issues):**
-- 🔐 **OAuth 2.1 with PKCE**: RFC-compliant authorization flows
-- 🏢 **Dynamic Client Registration**: RFC7591 support for new clients
-- 🔍 **Authorization Server Metadata**: RFC8414 endpoint discovery
+- 🔐 **[OAuth 2.1 with PKCE](https://oauth.net/2.1/)**: RFC-compliant authorization flows
+- 🏢 **Dynamic Client Registration**: [RFC7591](https://datatracker.ietf.org/doc/html/rfc7591) support for new clients
+- 🔍 **Authorization Server Metadata**: [RFC8414](https://datatracker.ietf.org/doc/html/rfc8414) endpoint discovery
 - 🛡️ **DNS Rebinding Protection**: Origin header validation
 - 🔄 **Token Rotation**: Access token expiration and refresh
 
@@ -436,47 +438,32 @@ You: "Great! Terminate that session"
 ChatGPT: "✅ Session terminated. All work has been committed."
 ```
 
-## 🎯 Roadmap
-
-**v0.1.0** (Current)
-- [x] Core MCP server with 10 tools (8 session + 2 ChatGPT-required)
-- [x] FastMCP 2.12.4 integration (production-ready)
-- [x] MCP 2025-03-26 specification compliance
-- [x] HTTP+SSE transport implementation
-- [x] ngrok tunnel integration for ChatGPT
-- [x] No-auth implementation (temporary solution)
-- [ ] Local supervisor with PTY management (next phase)
-- [ ] OAuth 2.1 + PKCE authentication (pending OpenAI fixes)
-
-**v0.2.0** (Next)
-- [ ] Enhanced error handling and recovery
-- [ ] Session persistence across reboots
-- [ ] Notification system for completed tasks
-- [ ] Web dashboard for session monitoring
-
-**v0.3.0** (Future)
-- [ ] Multi-host support (control multiple Macs)
-- [ ] Terminal playback and session recording
-- [ ] Advanced session templates and presets
-- [ ] Integration with CI/CD pipelines
-
 ## 🤝 Contributing
 
-This is an open-source project designed for the Claude-Code community!
+This is an open-source project designed for the [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) community!
 
 1. **Fork the repo**
 2. **Create feature branch**: `git checkout -b feature/amazing-feature`
 3. **Setup and test**: `make setup && make test`
 4. **Format and lint**: `make format && make lint`
-5. **Commit with good messages**: Follow our commit message format
+5. **Commit with good messages**: Follow [Conventional Commits](https://www.conventionalcommits.org/)
 6. **Submit pull request**
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+[MIT License](LICENSE) - see LICENSE file for details.
 
 ---
 
-**Built with ❤️ for the Claude-Code community**
+**Built with ❤️ for the [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) community**
 
-*Turn your iPhone into a remote control for your Mac's Claude-Code sessions.*
+*Turn your iPhone into a remote control for your Mac's Claude Code sessions using ChatGPT Custom Connectors.*
+
+## 🔗 Useful Links
+
+- [Model Context Protocol Documentation](https://modelcontextprotocol.io/)
+- [ChatGPT Custom Connectors (MCP)](https://platform.openai.com/docs/mcp)
+- [Claude Code Documentation](https://docs.claude.com/en/docs/claude-code/overview)
+- [FastMCP Framework](https://github.com/jlowin/fastmcp)
+- [tmux Wiki](https://github.com/tmux/tmux/wiki)
+- [ngrok Documentation](https://ngrok.com/docs)
