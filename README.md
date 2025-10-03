@@ -50,6 +50,58 @@ ChatGPT: "✅ Response sent! Session will continue with installation."
 
 > **💡 Test this demo locally!** Start the server + supervisor, then [`ngrok http 8000`](https://ngrok.com/docs) to try it yourself with real ChatGPT before deploying.
 
+## 🎬 Real-World Example
+
+Here's an actual conversation showing how to use ChatGPT to control Claude Code and build features on-the-go:
+
+**Scenario**: Adding next/previous navigation to a blog's notes pages while away from your Mac.
+
+```
+You: "How many Claude Code sessions running?"
+ChatGPT: "There is 1 active Claude-Code session running now:
+- claude-mostafa-xyz (active, in claude-code-mcp-controller)"
+
+You: "For this project, I want to add navigation for notes - basically 
+      previous/next post functionality"
+ChatGPT: "I've sent your request to Claude. It's analyzing the notes 
+          structure now..."
+
+You: "Check logs"
+ChatGPT: "Claude analyzed the project and suggested:
+- Add a NoteNavigation component with Previous/Next links
+- Create getAdjacentPosts(slug) helper in lib/mdx
+- Update notes/[slug]/page.tsx to use the new component
+- Fully typed, accessible design
+
+Do you want it to implement this?"
+
+You: "Sounds good, go for it"
+ChatGPT: "Claude has started implementing..."
+
+You: "Check logs"
+ChatGPT: "Claude created NoteNavigation.tsx and is asking to update page.tsx
+          to integrate it. Should I approve?"
+
+You: "Yes please"
+ChatGPT: "✅ Navigation wired in. Previous/Next links are now integrated 
+          with your existing theme."
+
+You: "Ask it to run checks and build to make sure everything working"
+ChatGPT: "Claude is running typecheck... ✅ Passed!
+          Now running build... ✅ Build successful!
+          
+          Your notes now have working previous/next navigation!"
+```
+
+**What happened:**
+- 💬 Natural conversation with ChatGPT from mobile
+- 🔍 Claude Code analyzed the codebase structure
+- 🏗️ Implemented 3 files: helper function, component, page integration
+- ✅ Ran TypeScript checks and production build
+- 🎨 Followed existing design system automatically
+
+**All done from your phone while commuting!** 🚀
+
 ## 🏗️ Architecture
 
 ```
